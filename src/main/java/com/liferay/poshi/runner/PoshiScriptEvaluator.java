@@ -19,14 +19,15 @@ import static junit.framework.TestCase.fail;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 
-import com.liferay.poshi.runner.elements.PoshiElement;
-import com.liferay.poshi.runner.elements.PoshiNode;
-import com.liferay.poshi.runner.elements.PoshiNodeFactory;
-import com.liferay.poshi.runner.script.PoshiScriptParserException;
-import com.liferay.poshi.runner.util.Dom4JUtil;
-import com.liferay.poshi.runner.util.FileUtil;
-import com.liferay.poshi.runner.util.OSDetector;
-import com.liferay.poshi.runner.util.StringUtil;
+import com.liferay.poshi.core.PoshiContext;
+import com.liferay.poshi.core.elements.PoshiElement;
+import com.liferay.poshi.core.elements.PoshiNode;
+import com.liferay.poshi.core.elements.PoshiNodeFactory;
+import com.liferay.poshi.core.script.PoshiScriptParserException;
+import com.liferay.poshi.core.util.Dom4JUtil;
+import com.liferay.poshi.core.util.FileUtil;
+import com.liferay.poshi.core.util.OSDetector;
+import com.liferay.poshi.core.util.StringUtil;
 
 import difflib.Delta;
 import difflib.DiffUtils;
@@ -149,9 +150,9 @@ public class PoshiScriptEvaluator {
 	public static void setUp() throws Exception {
 		String[] poshiFileNames = {"**/*.function"};
 
-		PoshiRunnerContext.readFiles(poshiFileNames, poshiDirName);
+		PoshiContext.readFiles(poshiFileNames, poshiDirName);
 
-		//		PoshiRunnerContext.readFiles(poshiFileNames, "/Users/kenji/Projects/github/liferay-qa-websites-ee/shared");
+		//		PoshiContext.readFiles(poshiFileNames, "/Users/kenji/Projects/github/liferay-qa-websites-ee/shared");
 	}
 
 	@Test

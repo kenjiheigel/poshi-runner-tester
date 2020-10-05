@@ -14,7 +14,7 @@
 
 package com.liferay.poshi.runner;
 
-import com.liferay.poshi.runner.util.FileUtil;
+import com.liferay.poshi.core.util.FileUtil;
 
 import java.io.IOException;
 import java.nio.file.Files;

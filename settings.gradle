@@ -1,4 +1,6 @@
 rootProject.name = 'poshi-dev-tools'
 
+include ':poshi-core'
+project(':poshi-core').projectDir = new File(settingsDir, '../liferay-portal/master/modules/test/poshi/poshi-core')
 include ':poshi-runner'
 project(':poshi-runner').projectDir = new File(settingsDir, '../liferay-portal/master/modules/test/poshi/poshi-runner')

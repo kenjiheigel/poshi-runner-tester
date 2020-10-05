@@ -14,11 +14,12 @@
 
 package com.liferay.poshi.runner;
 
-import com.liferay.poshi.runner.elements.PoshiElement;
-import com.liferay.poshi.runner.elements.PoshiNodeFactory;
-import com.liferay.poshi.runner.util.Dom4JUtil;
-import com.liferay.poshi.runner.util.FileUtil;
-import com.liferay.poshi.runner.util.OSDetector;
+import com.liferay.poshi.core.PoshiContext;
+import com.liferay.poshi.core.elements.PoshiElement;
+import com.liferay.poshi.core.elements.PoshiNodeFactory;
+import com.liferay.poshi.core.util.Dom4JUtil;
+import com.liferay.poshi.core.util.FileUtil;
+import com.liferay.poshi.core.util.OSDetector;
 import difflib.Chunk;
 import difflib.Delta;
 import difflib.DiffUtils;
@@ -65,7 +66,7 @@ public class PoshiElementTester {
 	public static void main(String[] args) throws Exception {
 		String[] poshiFileNames = {"**/*.function"};
 
-		PoshiRunnerContext.readFiles(poshiFileNames, portalPoshiDir);
+		PoshiContext.readFiles(poshiFileNames, portalPoshiDir);
 
 		boolean simulate = false;
 		simulate = true;

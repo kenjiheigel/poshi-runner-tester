@@ -1,13 +1,13 @@
 package com.liferay.poshi.runner;
 
-import com.liferay.poshi.runner.elements.ExecutePoshiElement;
-import com.liferay.poshi.runner.elements.PoshiElement;
-import com.liferay.poshi.runner.elements.PoshiNodeFactory;
-import com.liferay.poshi.runner.util.Dom4JUtil;
+import com.liferay.poshi.core.elements.ExecutePoshiElement;
+import com.liferay.poshi.core.elements.PoshiElement;
+import com.liferay.poshi.core.elements.PoshiNodeFactory;
+import com.liferay.poshi.core.util.Dom4JUtil;
+import com.liferay.poshi.core.util.FileUtil;
+import com.liferay.poshi.core.util.OSDetector;
+import com.liferay.poshi.core.util.RegexUtil;
 import com.liferay.poshi.runner.util.ExecUtil;
-import com.liferay.poshi.runner.util.FileUtil;
-import com.liferay.poshi.runner.util.OSDetector;
-import com.liferay.poshi.runner.util.RegexUtil;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tools.ant.DirectoryScanner;

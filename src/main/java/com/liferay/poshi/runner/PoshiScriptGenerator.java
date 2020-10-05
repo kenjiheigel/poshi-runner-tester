@@ -14,12 +14,13 @@
 
 package com.liferay.poshi.runner;
 
-import com.liferay.poshi.runner.elements.PoshiElement;
-import com.liferay.poshi.runner.elements.PoshiNodeFactory;
-import com.liferay.poshi.runner.script.PoshiScriptParserException;
-import com.liferay.poshi.runner.util.Dom4JUtil;
+import com.liferay.poshi.core.PoshiContext;
+import com.liferay.poshi.core.elements.PoshiElement;
+import com.liferay.poshi.core.elements.PoshiNodeFactory;
+import com.liferay.poshi.core.script.PoshiScriptParserException;
+import com.liferay.poshi.core.util.Dom4JUtil;
+import com.liferay.poshi.core.util.FileUtil;
 import com.liferay.poshi.runner.util.ExecUtil;
-import com.liferay.poshi.runner.util.FileUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -50,9 +51,9 @@ public class PoshiScriptGenerator extends PoshiScriptEvaluator {
 	public static void setUp() throws Exception {
 		String[] poshiFileNames = {"**/*.function"};
 
-		PoshiRunnerContext.readFiles(poshiFileNames, poshiDirName);
+		PoshiContext.readFiles(poshiFileNames, poshiDirName);
 
-		PoshiRunnerContext.readFiles(
+		PoshiContext.readFiles(
 			poshiFileNames,
 			"/Users/kenji/Projects/github/liferay-qa-websites-ee/shared");
 	}

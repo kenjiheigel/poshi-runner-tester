@@ -22,9 +22,9 @@ import com.atlassian.jira.rest.client.api.domain.Issue;
 import com.atlassian.jira.rest.client.api.domain.input.LinkIssuesInput;
 import com.atlassian.jira.rest.client.internal.async.AsynchronousJiraRestClientFactory;
 
-import com.liferay.poshi.runner.util.FileUtil;
-import com.liferay.poshi.runner.util.RegexUtil;
-import com.liferay.poshi.runner.util.StringUtil;
+import com.liferay.poshi.core.util.FileUtil;
+import com.liferay.poshi.core.util.RegexUtil;
+import com.liferay.poshi.core.util.StringUtil;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -58,14 +58,14 @@ import org.eclipse.jgit.treewalk.TreeWalk;
  */
 public class ChangelogGenerator {
 
-	public static final String RELEASE_TICKET = "POSHI-87";
+	public static final String RELEASE_TICKET = "POSHI-115";
 	public static final String PORTAL_DIR =
 		"/Users/kenjiheigel/Projects/github/liferay-portal/master";
 
 	public static void main(String[] args) throws Exception {
 		File gitWorkDir = new File(PORTAL_DIR);
 
-		String poshiDirPath = "modules/test/poshi-runner";
+		String poshiDirPath = "modules/test/poshi";
 
 		String bndPath = poshiDirPath + "/poshi-runner/bnd.bnd";
 
