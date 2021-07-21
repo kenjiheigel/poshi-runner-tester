@@ -1,7 +1,7 @@
 # poshi-dev-tools
 
 ### Configuration
-1. `git clone https://github.com/kenjiheigel/poshi-dev-tools`
+1. `git clone https://github.com/kenjiheigel/poshi-dev-tools.git`
 2. Create a file called `custom.properties` file and set: 
 ```
 portal.dir=/path/to/portal/dir
