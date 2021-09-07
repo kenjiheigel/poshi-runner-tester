@@ -39,6 +39,7 @@ dependencies {
 	compile group: "org.eclipse.jgit", name: "org.eclipse.jgit", version: "5.1.3.201810200350-r"
 	compile project(":poshi-core")
 	compile project(":poshi-runner")
+	compile project(":test:data-guard-connector")
 }
 
 repositories {

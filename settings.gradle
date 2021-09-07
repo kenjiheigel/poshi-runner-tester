@@ -7,10 +7,13 @@ String portalDir = '/opt/dev/projects/github/liferay-portal'
 File file = new File(rootDir, 'custom.properties')
 
 if (file.exists()) {
-    properties.load(new StringReader(file.text))
+	properties.load(new StringReader(file.text))
 
-    portalDir = properties['portal.dir']
+	portalDir = properties['portal.dir']
 }
+
+include ':test:data-guard-connector'
+project(':test:data-guard-connector').projectDir = new File(portalDir, '/modules/test/data-guard-connector')
 
 include ':poshi-core'
 project(':poshi-core').projectDir = new File(portalDir, '/modules/test/poshi/poshi-core')
