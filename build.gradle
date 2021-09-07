@@ -24,11 +24,10 @@ apply plugin: 'java'
 sourceCompatibility = "1.8"
 
 dependencies {
-	compile group: "com.atlassian.fugue", name: "fugue", version: "2.6.1"
-	compile group: "com.atlassian.httpclient", name: "atlassian-httpclient-plugin", version: "0.23.5"
-	compile group: "com.atlassian.jira", name: "jira-rest-java-client-core", version: "4.0.0"
-	compile group: "com.atlassian.sal", name: "sal-api", version: "4.0.0"
-	compile group: "com.google.guava", name: "guava", version: "23.0"
+	compile group: "com.atlassian.httpclient", name: "atlassian-httpclient-plugin", version: "2.1.1"
+	compile group: "com.atlassian.jira", name: "jira-rest-java-client-app", version: "5.2.0"
+	compile group: "com.atlassian.sal", name: "sal-api", version: "4.4.0"
+	compile group: "com.google.guava", name: "guava", version: "30.1-jre"
 	compile group: "com.googlecode.java-diff-utils", name: "diffutils", version: "1.2"
 	compile group: "commons-io", name: "commons-io", version: "2.6"
 	compile group: "dom4j", name: "dom4j", version: "1.6.1"
