@@ -19,6 +19,7 @@ import com.atlassian.jira.rest.client.api.JiraRestClient;
 import com.atlassian.jira.rest.client.api.JiraRestClientFactory;
 import com.atlassian.jira.rest.client.api.domain.BasicComponent;
 import com.atlassian.jira.rest.client.api.domain.Issue;
+import com.atlassian.jira.rest.client.api.domain.Status;
 import com.atlassian.jira.rest.client.api.domain.input.LinkIssuesInput;
 import com.atlassian.jira.rest.client.internal.async.AsynchronousJiraRestClientFactory;
 
@@ -26,18 +27,23 @@ import com.liferay.poshi.core.util.FileUtil;
 import com.liferay.poshi.core.util.RegexUtil;
 import com.liferay.poshi.core.util.StringUtil;
 
+import io.atlassian.util.concurrent.Promise;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLEncoder;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -47,22 +53,27 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.LogCommand;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.TreeWalk;
 
-/**:
+/**
  * @author Kenji Heigel
  */
 public class ChangelogGenerator {
 
-	public static final String RELEASE_TICKET = "POSHI-115";
 	public static final String PORTAL_DIR =
-		"/Users/kenjiheigel/Projects/github/liferay-portal/master";
+		"/opt/dev/projects/github/liferay-portal";
 
-	public static void main(String[] args) throws Exception {
+	public static final String RELEASE_TICKET = "POSHI-187";
+
+	public static void main(String[] args)
+		throws GitAPIException, IOException, URISyntaxException {
+
 		File gitWorkDir = new File(PORTAL_DIR);
 
 		String poshiDirPath = "modules/test/poshi";
@@ -79,14 +90,13 @@ public class ChangelogGenerator {
 
 		ObjectId newReleaseSHA = repository.resolve(repository.getBranch());
 
-		Iterable<RevCommit> bndCommits = git.log(
-		).add(
-			newReleaseSHA
-		).addPath(
-			bndPath
-		).setMaxCount(
-			50
-		).call();
+		LogCommand bndLogCommand = git.log();
+
+		bndLogCommand.add(newReleaseSHA);
+		bndLogCommand.addPath(bndPath);
+		bndLogCommand.setMaxCount(50);
+
+		Iterable<RevCommit> bndCommits = bndLogCommand.call();
 
 		ObjectId lastReleaseSHA = null;
 
@@ -97,8 +107,11 @@ public class ChangelogGenerator {
 			String content = _getFileContentAtCommit(git, commit, bndPath);
 
 			if (i == 2) {
-				releaseVersion = RegexUtil.getGroup(
-					content, "Bundle-Version:[\\s]*(.*)", 1);
+				Matcher matcher = _bundleVersionPattern.matcher(content);
+
+				if (matcher.find()) {
+					releaseVersion = matcher.group(1);
+				}
 			}
 
 			if (content.contains(_getLastReleasedVersion(changelogFile))) {
@@ -110,12 +123,16 @@ public class ChangelogGenerator {
 			i++;
 		}
 
-		Iterable<RevCommit> commits = git.log(
-		).addRange(
-			lastReleaseSHA, newReleaseSHA
-		).addPath(
-			poshiDirPath
-		).call();
+		System.out.println("releaseVersion" + releaseVersion);
+		System.out.println(
+			"lastReleaseSHA.getName()" + lastReleaseSHA.getName());
+
+		LogCommand poshiDirLogCommand = git.log();
+
+		poshiDirLogCommand.addPath(poshiDirPath);
+		poshiDirLogCommand.addRange(lastReleaseSHA, newReleaseSHA);
+
+		Iterable<RevCommit> commits = poshiDirLogCommand.call();
 
 		Set<String> tickets = new TreeSet<>();
 
@@ -124,13 +141,12 @@ public class ChangelogGenerator {
 
 			commitMessage = commitMessage.trim();
 
-			Pattern ticketPattern = Pattern.compile(
-				"(LPS|LRQA|LRCI|POSHI)[\\S]*");
-
-			Matcher matcher = ticketPattern.matcher(commitMessage);
+			Matcher matcher = _ticketPattern.matcher(commitMessage);
 
 			if (matcher.find()) {
 				String ticketID = matcher.group();
+
+				System.out.println(ticketID);
 
 				tickets.add(ticketID);
 			}
@@ -146,8 +162,6 @@ public class ChangelogGenerator {
 				uri, Authentication.JIRA_USERNAME,
 				Authentication.JIRA_PASSWORD);
 
-		Map<String, List<String>> ticketGroups = new TreeMap<>();
-
 		String ticketListString = tickets.toString();
 
 		ticketListString = StringUtil.replace(ticketListString, "[", "(");
@@ -161,20 +175,24 @@ public class ChangelogGenerator {
 
 		IssueRestClient issueRestClient = jiraRestClient.getIssueClient();
 
-		Issue releaseIssue = issueRestClient.getIssue(
-		RELEASE_TICKET
-		).claim();
+		Issue releaseIssue = _getIssue(issueRestClient, RELEASE_TICKET);
 
-		if (releaseIssue.getStatus().getName().equals("Closed")) {
+		Status releaseIssueStatus = releaseIssue.getStatus();
+
+		String releaseIssueStatusName = releaseIssueStatus.getName();
+
+		if (releaseIssueStatusName.equals("Closed")) {
 			throw new RuntimeException(
 				"https://issues.liferay.com/browse/" + RELEASE_TICKET +
 					" is closed. Verify correct ticket.");
 		}
 
+		Map<String, List<String>> ticketGroups = new TreeMap<>();
+
 		for (String ticketID : tickets) {
-			Issue issue = issueRestClient.getIssue(
-				ticketID
-			).claim();
+			System.out.println(ticketID);
+
+			Issue issue = _getIssue(issueRestClient, ticketID);
 
 			String ticketMessage =
 				_getTicketMarkdownURL(ticketID) + " - " + issue.getSummary();
@@ -182,7 +200,7 @@ public class ChangelogGenerator {
 			ticketMessage = ticketMessage.trim();
 
 			LinkIssuesInput linkIssuesInput = new LinkIssuesInput(
-			RELEASE_TICKET, ticketID, "Relationship");
+				RELEASE_TICKET, ticketID, "Relationship");
 
 			issueRestClient.linkIssue(linkIssuesInput);
 
@@ -203,20 +221,16 @@ public class ChangelogGenerator {
 						missingLabel = false;
 
 						if (!ticketGroups.containsKey(label)) {
-							List<String> ticketList = new ArrayList<>();
-
-							ticketList.add(ticketMessage);
-
-							ticketGroups.put(label, ticketList);
+							ticketGroups.put(
+								label,
+								new ArrayList<>(Arrays.asList(ticketMessage)));
 
 							break;
 						}
 
-						ticketGroups.get(
-							label
-						).add(
-							ticketMessage
-						);
+						List<String> ticketList = ticketGroups.get(label);
+
+						ticketList.add(ticketMessage);
 
 						break;
 					}
@@ -227,26 +241,24 @@ public class ChangelogGenerator {
 						"Missing poshi label: " + _getTicketURL(ticketID));
 
 					if (!ticketGroups.containsKey("Other")) {
-						List<String> ticketList = new ArrayList<>();
+						ticketGroups.put(
+							"Other",
+							new ArrayList<>(Arrays.asList(ticketMessage)));
 
-						ticketList.add(ticketMessage);
-
-						ticketGroups.put("Other", ticketList);
-
-						break;
+						continue;
 					}
 
-					ticketGroups.get(
-						"Other"
-					).add(
-						ticketMessage
-					);
+					List<String> ticketList = ticketGroups.get("Other");
+
+					ticketList.add(ticketMessage);
 				}
 			}
 			else if (ticketID.startsWith("POSHI")) {
-				if ((issue.getComponents() == null) ||
-					!issue.getComponents().iterator().hasNext()) {
+				Iterable<BasicComponent> iterable = issue.getComponents();
 
+				Iterator<BasicComponent> iterator = iterable.iterator();
+
+				if ((iterable == null) || !iterator.hasNext()) {
 					System.out.println(
 						"Missing component: " + _getTicketURL(ticketID));
 				}
@@ -259,40 +271,29 @@ public class ChangelogGenerator {
 					}
 
 					if (!ticketGroups.containsKey(componentName)) {
-						List<String> ticketList = new ArrayList<>();
-
-						ticketList.add(ticketMessage);
-
-						ticketGroups.put(componentName, ticketList);
+						ticketGroups.put(
+							componentName,
+							new ArrayList<>(Arrays.asList(ticketMessage)));
 
 						break;
 					}
 
-					ticketGroups.get(
-						componentName
-					).add(
-						ticketMessage
-					);
+					List<String> ticketList = ticketGroups.get(componentName);
+
+					ticketList.add(ticketMessage);
 				}
 			}
 			else {
-				continue;
+				if (!ticketGroups.containsKey("Other")) {
+					ticketGroups.put(
+						"Other", new ArrayList<>(Arrays.asList(ticketMessage)));
 
-//				if (!ticketGroups.containsKey("Other")) {
-//					List<String> ticketList = new ArrayList<>();
-//
-//					ticketList.add(ticketMessage);
-//
-//					ticketGroups.put("Other", ticketList);
-//
-//					continue;
-//				}
-//
-//				ticketGroups.get(
-//					"Other"
-//				).add(
-//					ticketMessage
-//				);
+					continue;
+				}
+
+				List<String> ticketList = ticketGroups.get("Other");
+
+				ticketList.add(ticketMessage);
 			}
 		}
 
@@ -334,8 +335,8 @@ public class ChangelogGenerator {
 
 		sb.append("## Additional Notes:\n");
 		sb.append("For more release notes click here:\n");
-		sb.append(
-			"https://github.com/liferay/liferay-portal/blob/master/modules/test/poshi-runner/CHANGELOG.markdown");
+		sb.append("https://github.com/liferay/liferay-portal/blob/master/");
+		sb.append("modules/test/poshi-runner/CHANGELOG.markdown");
 
 		return sb.toString();
 	}
@@ -372,14 +373,21 @@ public class ChangelogGenerator {
 		try (TreeWalk treeWalk = TreeWalk.forPath(
 				repository, path, commit.getTree())) {
 
-			ObjectId objectId = treeWalk.getObjectId(0);
-
-			ObjectLoader objectLoader = repository.open(objectId);
+			ObjectLoader objectLoader = repository.open(
+				treeWalk.getObjectId(0));
 
 			byte[] bytes = objectLoader.getBytes();
 
 			return new String(bytes, StandardCharsets.UTF_8);
 		}
+	}
+
+	private static Issue _getIssue(
+		IssueRestClient issueRestClient, String ticketID) {
+
+		Promise<Issue> promise = issueRestClient.getIssue(ticketID);
+
+		return promise.claim();
 	}
 
 	private static String _getLastReleasedVersion(File changelogFile)
@@ -403,7 +411,14 @@ public class ChangelogGenerator {
 				String patchVersion = RegexUtil.getGroup(
 					releaseVersion, "[\\d]+\\.[\\d]+\\.([\\d]+)", 1);
 
-				Integer patchVersionInteger = Integer.parseInt(patchVersion);
+				Integer patchVersionInteger = 0;
+
+				try {
+					patchVersionInteger = Integer.parseInt(patchVersion);
+				}
+				catch (NumberFormatException numberFormatException) {
+					throw new RuntimeException(numberFormatException);
+				}
 
 				patchVersionInteger++;
 
@@ -456,6 +471,10 @@ public class ChangelogGenerator {
 		return new String(chars);
 	}
 
+	private static final Pattern _bundleVersionPattern = Pattern.compile(
+		"Bundle-Version:[\\s]*(.*)");
 	private static String _lastReleasedVersion = null;
+	private static final Pattern _ticketPattern = Pattern.compile(
+		"(LPS|LRQA|LRCI|POSHI)-[0-9]+");
 
 }
