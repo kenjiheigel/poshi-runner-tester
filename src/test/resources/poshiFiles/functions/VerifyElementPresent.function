@@ -13,4 +13,5 @@ definition {
 
 		selenium.assertLiferayErrors();
 	}
+
 }

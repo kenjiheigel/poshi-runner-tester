@@ -1,5 +1,0 @@
-definition {
-	test Test {
-		echo("Test");
-	}
-}

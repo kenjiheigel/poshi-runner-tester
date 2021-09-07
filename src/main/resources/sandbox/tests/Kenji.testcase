@@ -1,7 +1,0 @@
-<definition>
-	<command name="Testing">
-		<var method="MathUtil#isGreaterThan('1', '2')" name="testing" />
-
-		<echo>${testing}</echo>
-	</command>
-</definition>

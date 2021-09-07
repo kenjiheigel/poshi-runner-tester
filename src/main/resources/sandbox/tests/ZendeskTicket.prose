@@ -1,8 +1,0 @@
-Feature: Ticket Creation
-	When a user logs into zendesk.liferay.com, blah blah blah
-
-Scenario: Simple Login
-	Straight up login
-
-	When I log into zendesk as "lesa.evaluation@gmail.com" with password "liferay123"
-	Then I should see the user dropdown button

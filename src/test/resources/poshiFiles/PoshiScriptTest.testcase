@@ -1,0 +1,13 @@
+definition {
+
+	test MyTest {
+		Open(locator1 = "http://www.google.com");
+
+		Open(locator1 = "http://www.liferay.com");
+
+		MathUtil.difference(5, 3);
+
+		echo("This is the end of the test");
+	}
+
+}
