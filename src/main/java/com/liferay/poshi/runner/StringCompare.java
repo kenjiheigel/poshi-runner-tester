@@ -52,33 +52,33 @@ public class StringCompare {
 		_printYellowChunk(revised);
 	}
 
-	private static void _printChunk(Chunk chunk) {
-		for (Object line : chunk.getLines()) {
-			System.out.println(line.toString());
-		}
-	}
-
 	private static void _printCyanChunk(Chunk chunk) {
 		for (Object line : chunk.getLines()) {
 			System.out.println("\033[36m" + line.toString() + "\033[0m");
 		}
 	}
 
-	private static void _printGreenChunk(Chunk chunk) {
+	private static void _printYellowChunk(Chunk chunk) {
+		for (Object line : chunk.getLines()) {
+			System.out.println("\033[33m" + line.toString() + "\033[0m");
+		}
+	}
+
+	private void _printChunk(Chunk chunk) {
+		for (Object line : chunk.getLines()) {
+			System.out.println(line.toString());
+		}
+	}
+
+	private void _printGreenChunk(Chunk chunk) {
 		for (Object line : chunk.getLines()) {
 			System.out.println("\033[32m" + line.toString() + "\033[0m");
 		}
 	}
 
-	private static void _printRedChunk(Chunk chunk) {
+	private void _printRedChunk(Chunk chunk) {
 		for (Object line : chunk.getLines()) {
 			System.out.println("\033[31m" + line.toString() + "\033[0m");
-		}
-	}
-
-	private static void _printYellowChunk(Chunk chunk) {
-		for (Object line : chunk.getLines()) {
-			System.out.println("\033[33m" + line.toString() + "\033[0m");
 		}
 	}
 

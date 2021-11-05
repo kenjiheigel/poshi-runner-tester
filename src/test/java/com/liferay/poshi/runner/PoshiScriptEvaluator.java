@@ -64,21 +64,22 @@ import org.junit.Test;
 public class PoshiScriptEvaluator {
 
 	public static final String poshiDirName =
-		"/Users/kenjiheigel/Projects/github/" +
-//			"liferay-portal/master/" +
+		"/opt/dev/projects/github/" +
+			"liferay-portal/" +
 //			"liferay-portal-ee/7.1.x/" +
 //			"liferay-portal-ee/7.0.x/" +
 //			"liferay-portal-ee/ee-6.2.x/" +
 //			"liferay-portal-ee/ee-6.2.10/" +
 //			"liferay-portal-ee/ee-6.1.x/" +
 //			"com-liferay-commerce/";
+//			"liferay-plugins-ee/ee-6.2.x/" +
+				"portal-web/test/functional/com/liferay/portalweb/";
 
-			"liferay-plugins-ee/ee-6.2.x/" +
-
-// 			"liferay-qa-portal-legacy-ee/";
+	// 			"liferay-qa-portal-legacy-ee/";
 
 	//			"liferay-qa-websites-ee/sync/";
-			"portlets/osb-patcher-portlet/test/functional/";
+	//			"portlets/osb-patcher-portlet/test/functional/";
+	//			"modules/test/poshi/poshi-runner-resources/src/main/resources/";
 
 	public static boolean areElementsEqual(Element element1, Element element2) {
 		NodeComparator nodeComparator = new NodeComparator();
@@ -366,7 +367,11 @@ public class PoshiScriptEvaluator {
 
 		String fileName = filePath.substring(start + 1, filePath.length());
 
-		if (!fileContent.trim().startsWith("<definition")) {
+		if (!fileContent.trim(
+			).startsWith(
+				"<definition"
+			)) {
+
 			throw new PoshiScriptTranslationException(
 				filePath + " is not an XML file, could not evaluate XML");
 		}
@@ -510,7 +515,7 @@ public class PoshiScriptEvaluator {
 			filePath, successfulCommandElements, totalCommandElements);
 	}
 
-	private static List<String> stringToLines(String s) {
+	private List<String> stringToLines(String s) {
 		BufferedReader br = null;
 		String line = "";
 		List<String> lines = new LinkedList<>();
