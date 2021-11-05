@@ -30,6 +30,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+import java.util.Set;
 import java.util.concurrent.TimeoutException;
 
 import org.dom4j.Document;
@@ -44,6 +45,7 @@ import org.junit.Test;
  */
 public class PoshiScriptGenerator extends PoshiScriptEvaluator {
 
+	public static final boolean commit = false;
 	public static final String poshiDirName = PoshiScriptEvaluator.poshiDirName;
 	public static final String ticket = "LRQA-45878";
 
@@ -59,54 +61,40 @@ public class PoshiScriptGenerator extends PoshiScriptEvaluator {
 	}
 
 	@Test
-	public void generateFunctionsPoshiScript()
-		throws IOException, PoshiScriptParserException, TimeoutException {
+	public void generatePoshiScriptFile() throws PoshiScriptParserException {
+		String filePath =
+			poshiDirName + "tests/portalsmoke/PortalSmoke.testcase";
 
-		for (String functionFilePath : getFunctionFilePaths()) {
-			generatePoshiScriptFile(functionFilePath);
-		}
-
-		ExecUtil.executeCommands(
-			false, new File(poshiDirName), 30000,
-			"git commit -am \"" + ticket +
-				" Translate *.function files to Poshi Script\"");
+		generatePoshiScriptFile(filePath);
 	}
 
 	@Test
-	public void generateMacrosPoshiScript()
+	public void generatePoshiScriptFunctions()
 		throws IOException, PoshiScriptParserException, TimeoutException {
 
-		for (String macroFilePath : getMacroFilePaths()) {
-			generatePoshiScriptFile(macroFilePath);
-		}
-
-		ExecUtil.executeCommands(
-			false, new File(poshiDirName), 30000,
-			"git commit -am \"" + ticket +
-				" Translate *.macro files to Poshi Script\"");
+		generatePoshiScriptFiles(getFunctionFilePaths(), "function");
 	}
 
 	@Test
-	public void generatePoshiScriptFile() throws IOException, TimeoutException {
+	public void generatePoshiScriptMacros()
+		throws IOException, PoshiScriptParserException, TimeoutException {
 
-		//		String filePath = poshiDirName + "tests/enduser/wem/navigationmenus/NavigationMenus.testcase";
-
-		//
-		//		generatePoshiScriptFile(filePath);
+		generatePoshiScriptFiles(getMacroFilePaths(), "macro");
 	}
 
 	@Test
-	public void generateTestCasesPoshiScript()
+	public void generatePoshiScriptTestCases()
 		throws IOException, PoshiScriptParserException, TimeoutException {
 
-		for (String testCaseFilePath : getTestCaseFilePaths()) {
-			generatePoshiScriptFile(testCaseFilePath);
-		}
+		generatePoshiScriptFiles(getTestCaseFilePaths(), "testcase");
+	}
 
-		ExecUtil.executeCommands(
-			false, new File(poshiDirName), 30000,
-			"git commit -am \"" + ticket +
-				" Translate *.testcase files to Poshi Script\"");
+	@Test
+	public void generatePoshiXMLFile() throws PoshiScriptParserException {
+		String filePath =
+			poshiDirName + "tests/portalsmoke/PortalSmoke.testcase";
+
+		generatePoshiXMLFile(filePath);
 	}
 
 	protected void generatePoshiScriptFile(String filePath)
@@ -146,6 +134,42 @@ public class PoshiScriptGenerator extends PoshiScriptEvaluator {
 		}
 		catch (DocumentException documentException) {
 			documentException.printStackTrace();
+		}
+		catch (IOException ioException) {
+			ioException.printStackTrace();
+		}
+	}
+
+	protected void generatePoshiScriptFiles(
+			Set<String> filePaths, String fileType)
+		throws IOException, PoshiScriptParserException, TimeoutException {
+
+		for (String filepath : filePaths) {
+			generatePoshiScriptFile(filepath);
+		}
+
+		if (commit) {
+			ExecUtil.executeCommands(
+				false, new File(poshiDirName), 30000,
+				"git commit -am \"" + ticket + " Translate *." + fileType +
+					" files to Poshi Script\"");
+		}
+	}
+
+	protected void generatePoshiXMLFile(String filePath)
+		throws PoshiScriptParserException {
+
+		try {
+			URL url = FileUtil.getURL(new File(filePath));
+
+			PoshiElement poshiElement =
+				(PoshiElement)PoshiNodeFactory.newPoshiNodeFromFile(url);
+
+			Files.write(
+				Paths.get(filePath),
+				Dom4JUtil.format(
+					poshiElement
+				).getBytes());
 		}
 		catch (IOException ioException) {
 			ioException.printStackTrace();
