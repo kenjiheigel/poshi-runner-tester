@@ -93,6 +93,21 @@ public class PoshiScriptGenerator extends PoshiScriptEvaluator {
 		generatePoshiXMLFile(filePath);
 	}
 
+	@Test
+	public void generatePoshiXMLFunctions() throws PoshiScriptParserException {
+		generatePoshiXMLFiles(getFunctionFilePaths());
+	}
+
+	@Test
+	public void generatePoshiXMLMacros() throws PoshiScriptParserException {
+		generatePoshiXMLFiles(getMacroFilePaths());
+	}
+
+	@Test
+	public void generatePoshiXMLTestcases() throws PoshiScriptParserException {
+		generatePoshiXMLFiles(getTestCaseFilePaths());
+	}
+
 	protected void generatePoshiScriptFile(String filePath)
 		throws PoshiScriptParserException {
 
@@ -169,6 +184,14 @@ public class PoshiScriptGenerator extends PoshiScriptEvaluator {
 		}
 		catch (IOException ioException) {
 			ioException.printStackTrace();
+		}
+	}
+
+	protected void generatePoshiXMLFiles(Set<String> filePaths)
+		throws PoshiScriptParserException {
+
+		for (String filepath : filePaths) {
+			generatePoshiXMLFile(filepath);
 		}
 	}
 
