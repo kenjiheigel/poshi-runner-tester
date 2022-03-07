@@ -21,6 +21,7 @@ buildscript {
 	}
 }
 
+apply plugin: "com.liferay.poshi.defaults"
 apply plugin: "com.liferay.root.defaults.plugin"
 apply plugin: 'java'
 
