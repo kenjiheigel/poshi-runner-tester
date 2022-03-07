@@ -19,3 +19,5 @@ include ':poshi-core'
 project(':poshi-core').projectDir = new File(portalDir, '/modules/test/poshi/poshi-core')
 include ':poshi-runner'
 project(':poshi-runner').projectDir = new File(portalDir, '/modules/test/poshi/poshi-runner')
+include ':sdk:gradle-plugins-poshi-runner'
+project(':sdk:gradle-plugins-poshi-runner').projectDir = new File(portalDir, '/modules/sdk/gradle-plugins-poshi-runner')
