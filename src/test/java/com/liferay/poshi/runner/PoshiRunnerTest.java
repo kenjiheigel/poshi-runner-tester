@@ -30,7 +30,7 @@ import org.junit.Test;
  */
 public class PoshiRunnerTest extends PoshiRunnerTestCase {
 
-	public static boolean local = false;
+	public static boolean local = true;
 
 	@Before
 	public void setUp() throws Exception {
