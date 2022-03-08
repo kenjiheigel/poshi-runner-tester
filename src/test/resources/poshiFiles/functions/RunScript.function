@@ -1,5 +1,0 @@
-<definition default="runScript">
-	<command name="runScript">
-		<execute selenium="runScript" />
-	</command>
-</definition>
