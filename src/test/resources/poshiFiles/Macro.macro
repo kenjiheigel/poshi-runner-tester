@@ -1,97 +1,68 @@
-<definition>
-	<var name="rootVar" value="set in the macro" />
+definition {
+    var rootVar = "set in the macro";
 
-	<command name="nestedMacro">
-		<echo message="nestedMacro: ${rootVar}" />
+    macro nestedMacro {
+    		echo("nestedMacro: ${rootVar}");
 
-		<execute macro="Macro#macro">
-			<var name="rootVar" value="${rootVar}" />
-		</execute>
-	</command>
+    		Macro.macro(rootVar = "${rootVar}");
+        }
 
-	<command name="macro">
-		<echo>macro</echo>
-	</command>
+    macro macro{
+            echo("test");
+        }
 
-	<command name="exclusiveOr">
-		<echo>${A}</echo>
-		<echo>${B}</echo>
+    macro exclusiveOr {
+        echo(${A});
+        echo(${B});
 
-		<if>
-			<or>
-				<and>
-					<isset var="A" />
-					<isset var="B" />
-				</and>
-				<and>
-					<not>
-						<isset var="B" />
-					</not>
-					<not>
-						<isset var="A" />
-					</not>
-				</and>
-			</or>
-			<then>
-				<echo>A: ${A}</echo>
-				<echo>B: ${B}</echo>
+        if((isSet(A) && isSet(B)) || (!(isSet(A)) && !(isSet(B)))) {
+            echo(A: ${A});
+            echo(B: ${B});
+            echo("This should fail");
+        }
+    }
 
-				<echo message="This should fail" />
-			</then>
-		</if>
-	</command>
+    macro returnTest {
+    		var varName = "var value";
 
-	<command name="returnTest">
-		<var name="varName" value="var value" />
+    		if("true" == "true") {
+    		    return "${varName}";
 
-		<if>
-			<equals arg1="true" arg2="true" />
-			<then>
-				<return value="${varName}"/>
+    		    Macro.test();
+    		} else {
+    		    return "${varName}";
+    		}
 
-				<execute macro="Macro#test" />
-			</then>
-			<else>
-				<return value="${varName}"/>
-			</else>
-		</if>
+    		// Macro.test()
 
-		<!--<execute macro="Macro#test" />-->
+    		// return "${varName}"
+    	}
 
-		<!--<return value="${varName}"/>-->
-	</command>
+    macro nested {
+        Macro.returnTest(return="varName");
 
-	<command name="nested">
-		<execute macro="Macro#returnTest">
-			<return name="varName" />
-		</execute>
+         return "${varName}";
+    }
 
-		<return value="${varName}"/>
-	</command>
+    macro test {
+        var varName = "var value";
+    }
 
-	<command name="test">
-		<var name="varName" value="var value" />
-	</command>
+    macro callFunction {
+        if("true" == "true"){
+            var key_testVariable = "${testVariable}";
 
-	<command name="callFunction">
-		<if>
-			<equals arg1="true" arg2="true" />
-			<then>
-				<var name="key_testVariable" value="${testVariable}" />
+            Function.pathLocator(locator1="Path#PATH");
+        }
 
-				<execute function="Function#pathLocator" locator1="Path#PATH" />
-			</then>
-		</if>
+        if("true" == "true") {
+            var testVar = "another";
 
-		<if>
-			<equals arg1="true" arg2="true" />
-			<then>
-				<var name="testVariable" value="another" />
+             Function.pathLocator(
+             locator1="Path#PATH",
+             key_testVariable = "${testVar}");
 
-				<execute function="Function#pathLocator" locator1="Path#PATH">
-					<var name="key_testVariable" value="${testVariable}" />
-				</execute>
-			</then>
-		</if>
-	</command>
-</definition>
+        }
+    }
+
+}

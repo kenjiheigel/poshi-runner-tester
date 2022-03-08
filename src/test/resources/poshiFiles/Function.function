@@ -1,32 +1,29 @@
-<definition default="testFunction">
-	<command name="testFunction">
-		<execute selenium="echo" />
-	</command>
+@default = "testFunction"
+definition {
+	function testFunction {
+	    selenium.echo();
+	}
 
-	<command name="isTestName">
-		<execute argument1="${value1}" selenium="isTestName" />
-	</command>
+	function isTestName{
+	    selenium.isTestName("${value1}");
+	}
 
-	<command name="echoValue">
-		<execute argument1="echo value: ${value1}" selenium="echo" />
-	</command>
+    function echoValue {
+        selenium.echo("echo value: ${value1}");
+    }
 
-	<command name="open">
-		<execute selenium="open" />
-	</command>
+	function open {
+	    selenium.open();
+	}
 
-	<command name="pathLocator">
-		<execute argument1="${locator1}" selenium="echo" />
-	</command>
+    function pathLocator {
+        selenium.echo("${locator1}");
+    }
 
-	<command name="equals">
-		<if>
-			<not>
-				<equals arg1="${locator1}" arg2="${locator2}" />
-			</not>
-			<then>
-				<execute argument1="Expected value ${locator1} is not equal to actual value ${locator2}." selenium="fail" />
-			</then>
-		</if>
-	</command>
-</definition>
+    function equals{
+        if("${locator1" != "${locator2}")
+            {
+                selenium.fail("Expected value ${locator1} is not equal to actual value ${locator2}.");
+            }
+    }
+}

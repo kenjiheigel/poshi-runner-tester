@@ -1,5 +1,0 @@
-<definition default="assertConsoleTextPresent">
-	<command name="assertConsoleTextPresent">
-		<execute selenium="assertConsoleTextPresent" />
-	</command>
-</definition>
