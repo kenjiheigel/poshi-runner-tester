@@ -62,7 +62,7 @@ repositories {
 }
 
 afterEvaluate {
-    test.dependsOn 'downloadChromeDriver'
+    test.dependsOn 'downloadWebDriverBrowserBinary'
 }
 
 test {
