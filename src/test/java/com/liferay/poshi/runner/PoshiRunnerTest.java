@@ -18,10 +18,12 @@ import com.liferay.poshi.core.PoshiContext;
 import com.liferay.poshi.core.PoshiValidation;
 import com.liferay.poshi.core.util.PropsUtil;
 
+import java.io.File;
 import java.io.FileInputStream;
 
 import java.util.Properties;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -43,13 +45,18 @@ public class PoshiRunnerTest extends PoshiRunnerTestCase {
 		// the test you plan to run):
 		// ant -f build-test.xml prepare-selenium -Dtest.class=PortalSmoke
 
-		if (local) {
-			properties.load(new FileInputStream("poshi-ext.properties"));
+		File poshiPropertiesFile = new File(
+			_TEST_BASE_DIR_NAME, "poshi.properties");
+
+		if (poshiPropertiesFile.exists()) {
+			properties.load(new FileInputStream(poshiPropertiesFile));
 		}
-		else {
-			properties.load(
-				new FileInputStream(
-					_TEST_BASE_DIR_NAME + "/poshi-ext.properties"));
+
+		File poshiExtPropertiesFile = new File(
+			_TEST_BASE_DIR_NAME + "/poshi-ext.properties");
+
+		if (poshiExtPropertiesFile.exists()) {
+			properties.load(new FileInputStream(poshiExtPropertiesFile));
 		}
 
 		PropsUtil.clear();
@@ -59,19 +66,37 @@ public class PoshiRunnerTest extends PoshiRunnerTestCase {
 		PoshiContext.readFiles();
 	}
 
-	@Test
-	public void testPoshiTest() throws Exception {
-		PoshiRunner poshiRunner = new PoshiRunner("PortalSmoke#Smoke");
-
-		poshiRunner.setUp();
-
-		poshiRunner.test();
-
+	@After
+	public void tearDown() {
 		try {
-			poshiRunner.tearDown();
+			if (poshiRunner != null) {
+				poshiRunner.tearDown();
+			}
 		}
 		catch (Throwable throwable) {
 			throw new RuntimeException(throwable);
+		}
+	}
+
+	@Test
+	public void testPoshiTest() throws Exception {
+		poshiRunner = new PoshiRunner("LocalFile.PoshiScriptTest#MyTest");
+
+		try {
+			poshiRunner.setUp();
+
+			poshiRunner.test();
+		}
+		catch (Exception exception) {
+			exception.printStackTrace();
+		}
+		finally {
+			try {
+				poshiRunner.tearDown();
+			}
+			catch (Throwable throwable) {
+				throw new RuntimeException(throwable);
+			}
 		}
 	}
 
@@ -81,9 +106,6 @@ public class PoshiRunnerTest extends PoshiRunnerTestCase {
 	}
 
 	public PoshiRunner poshiRunner;
-
-	private static final String _PORTAL_DIR_NAME =
-		"/opt/dev/projects/github/liferay-portal";
 
 	private static final String _TEST_BASE_DIR_NAME;
 
