@@ -20,6 +20,7 @@ import com.atlassian.jira.rest.client.api.JiraRestClientFactory;
 import com.atlassian.jira.rest.client.api.domain.BasicComponent;
 import com.atlassian.jira.rest.client.api.domain.Issue;
 import com.atlassian.jira.rest.client.api.domain.Status;
+import com.atlassian.jira.rest.client.api.domain.input.IssueInputBuilder;
 import com.atlassian.jira.rest.client.api.domain.input.LinkIssuesInput;
 import com.atlassian.jira.rest.client.internal.async.AsynchronousJiraRestClientFactory;
 
@@ -28,6 +29,12 @@ import com.liferay.poshi.core.util.RegexUtil;
 import com.liferay.poshi.core.util.StringUtil;
 
 import io.atlassian.util.concurrent.Promise;
+
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
+import java.awt.datatransfer.UnsupportedFlavorException;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -69,7 +76,7 @@ public class ChangelogGenerator {
 	public static final String PORTAL_DIR =
 		"/opt/dev/projects/github/liferay-portal";
 
-	public static final String RELEASE_TICKET = "POSHI-187";
+	public static final String RELEASE_TICKET = "POSHI-448";
 
 	public static void main(String[] args)
 		throws GitAPIException, IOException, URISyntaxException {
@@ -123,13 +130,10 @@ public class ChangelogGenerator {
 			i++;
 		}
 
-		System.out.println("releaseVersion" + releaseVersion);
-		System.out.println(
-			"lastReleaseSHA.getName()" + lastReleaseSHA.getName());
-
 		LogCommand poshiDirLogCommand = git.log();
 
 		poshiDirLogCommand.addPath(poshiDirPath);
+		poshiDirLogCommand.addPath("modules/sdk/gradle-plugins-poshi-runner");
 		poshiDirLogCommand.addRange(lastReleaseSHA, newReleaseSHA);
 
 		Iterable<RevCommit> commits = poshiDirLogCommand.call();
@@ -145,8 +149,6 @@ public class ChangelogGenerator {
 
 			if (matcher.find()) {
 				String ticketID = matcher.group();
-
-				System.out.println(ticketID);
 
 				tickets.add(ticketID);
 			}
@@ -187,17 +189,11 @@ public class ChangelogGenerator {
 					" is closed. Verify correct ticket.");
 		}
 
-		Map<String, List<String>> ticketGroups = new TreeMap<>();
+		List<String> missingComponentTickets = new ArrayList<>();
+		Map<String, List<Issue>> ticketGroups = new TreeMap<>();
 
 		for (String ticketID : tickets) {
-			System.out.println(ticketID);
-
 			Issue issue = _getIssue(issueRestClient, ticketID);
-
-			String ticketMessage =
-				_getTicketMarkdownURL(ticketID) + " - " + issue.getSummary();
-
-			ticketMessage = ticketMessage.trim();
 
 			LinkIssuesInput linkIssuesInput = new LinkIssuesInput(
 				RELEASE_TICKET, ticketID, "Relationship");
@@ -222,15 +218,14 @@ public class ChangelogGenerator {
 
 						if (!ticketGroups.containsKey(label)) {
 							ticketGroups.put(
-								label,
-								new ArrayList<>(Arrays.asList(ticketMessage)));
+								label, new ArrayList<>(Arrays.asList(issue)));
 
 							break;
 						}
 
-						List<String> ticketList = ticketGroups.get(label);
+						List<Issue> ticketList = ticketGroups.get(label);
 
-						ticketList.add(ticketMessage);
+						ticketList.add(issue);
 
 						break;
 					}
@@ -242,15 +237,14 @@ public class ChangelogGenerator {
 
 					if (!ticketGroups.containsKey("Other")) {
 						ticketGroups.put(
-							"Other",
-							new ArrayList<>(Arrays.asList(ticketMessage)));
+							"Other", new ArrayList<>(Arrays.asList(issue)));
 
 						continue;
 					}
 
-					List<String> ticketList = ticketGroups.get("Other");
+					List<Issue> issues = ticketGroups.get("Other");
 
-					ticketList.add(ticketMessage);
+					issues.add(issue);
 				}
 			}
 			else if (ticketID.startsWith("POSHI")) {
@@ -261,101 +255,153 @@ public class ChangelogGenerator {
 				if ((iterable == null) || !iterator.hasNext()) {
 					System.out.println(
 						"Missing component: " + _getTicketURL(ticketID));
+
+					missingComponentTickets.add(ticketID);
 				}
 
 				for (BasicComponent basicComponent : issue.getComponents()) {
 					String componentName = basicComponent.getName();
 
-					if (componentName.equals("Release")) {
+					if (componentName.equals("IDE") ||
+						componentName.equals("Release")) {
+
 						break;
 					}
 
 					if (!ticketGroups.containsKey(componentName)) {
 						ticketGroups.put(
 							componentName,
-							new ArrayList<>(Arrays.asList(ticketMessage)));
+							new ArrayList<>(Arrays.asList(issue)));
 
 						break;
 					}
 
-					List<String> ticketList = ticketGroups.get(componentName);
+					List<Issue> issues = ticketGroups.get(componentName);
 
-					ticketList.add(ticketMessage);
+					issues.add(issue);
 				}
 			}
 			else {
 				if (!ticketGroups.containsKey("Other")) {
 					ticketGroups.put(
-						"Other", new ArrayList<>(Arrays.asList(ticketMessage)));
+						"Other", new ArrayList<>(Arrays.asList(issue)));
 
 					continue;
 				}
 
-				List<String> ticketList = ticketGroups.get("Other");
+				List<Issue> ticketList = ticketGroups.get("Other");
 
-				ticketList.add(ticketMessage);
+				ticketList.add(issue);
 			}
 		}
 
-		System.out.println(_getChangelogPost(ticketGroups, releaseVersion));
+		if (!missingComponentTickets.isEmpty()) {
+			StringBuilder sb = new StringBuilder();
 
-		String changeLogText = FileUtil.read(changelogFile);
+			sb.append("Please add the proper 'Component' to the following ");
+			sb.append("tickets and rerun this class:");
 
-		changeLogText = changeLogText.replaceFirst(
-			"# Poshi Runner Change Log\n",
-			_getChangelogText(ticketGroups, releaseVersion));
+			for (String missingComponentTicket : missingComponentTickets) {
+				sb.append("\n");
+				sb.append(_getTicketURL(missingComponentTicket));
+			}
 
-		Files.write(changelogFile.toPath(), changeLogText.getBytes());
+			throw new RuntimeException(sb.toString());
+		}
+
+		_updateChangelogFile(changelogFile, ticketGroups, releaseVersion);
+
+		_updateJIRAIssueBodyText(ticketGroups, RELEASE_TICKET, issueRestClient);
+
+		_copyHTMLTextToClipboard(
+			_getSlackPost(ticketGroups, releaseVersion), "plaintext");
 
 		jiraRestClient.close();
 	}
 
-	private static String _getChangelogPost(
-		Map<String, List<String>> ticketGroups, String releaseVersion) {
+	public static class HtmlTransferable implements Transferable {
 
-		StringBuilder sb = new StringBuilder();
-
-		sb.append("\n# Release: **[POSHI ");
-		sb.append(releaseVersion);
-		sb.append("](");
-		sb.append(_getTicketURL(RELEASE_TICKET));
-		sb.append(")**\n\n");
-
-		for (Map.Entry<String, List<String>> entry : ticketGroups.entrySet()) {
-			String label = entry.getKey();
-
-			sb.append("_" + label + "_\n");
-
-			for (String ticketMessage : entry.getValue()) {
-				sb.append("* " + ticketMessage + "\n");
-			}
-
-			sb.append("\n");
+		public HtmlTransferable(String htmlText, String plainText) {
+			_htmlText = htmlText;
+			_plainText = plainText;
 		}
 
-		sb.append("## Additional Notes:\n");
-		sb.append("For more release notes click here:\n");
-		sb.append("https://github.com/liferay/liferay-portal/blob/master/");
-		sb.append("modules/test/poshi-runner/CHANGELOG.markdown");
+		@Override
+		public Object getTransferData(DataFlavor flavor)
+			throws UnsupportedFlavorException {
 
-		return sb.toString();
+			String transferData = _plainText;
+
+			if (flavor == DataFlavor.stringFlavor) {
+				transferData = _plainText;
+			}
+			else if (flavor == DataFlavor.allHtmlFlavor) {
+				transferData = _htmlText;
+			}
+
+			if (String.class.equals(flavor.getRepresentationClass())) {
+				return transferData;
+			}
+
+			throw new UnsupportedFlavorException(flavor);
+		}
+
+		public DataFlavor[] getTransferDataFlavors() {
+			return _htmlDataFlavors.toArray(new DataFlavor[0]);
+		}
+
+		public boolean isDataFlavorSupported(DataFlavor flavor) {
+			return _htmlDataFlavors.contains(flavor);
+		}
+
+		private static final List<DataFlavor> _htmlDataFlavors =
+			new ArrayList<DataFlavor>() {
+				{
+					add(DataFlavor.stringFlavor);
+					add(DataFlavor.allHtmlFlavor);
+				}
+			};
+
+		private String _htmlText;
+		private String _plainText;
+
+	}
+
+	private static void _copyHTMLTextToClipboard(
+		String htmlText, String plainText) {
+
+		HtmlTransferable htmlTransferable = new HtmlTransferable(
+			htmlText, plainText);
+
+		Toolkit toolkit = Toolkit.getDefaultToolkit();
+
+		Clipboard clipboard = toolkit.getSystemClipboard();
+
+		clipboard.setContents(htmlTransferable, null);
+
+		System.out.println(
+			"\nThe following formatted HTML text has been copied to the " +
+				"clipboard:");
+		System.out.println(htmlText);
 	}
 
 	private static String _getChangelogText(
-		Map<String, List<String>> ticketGroups, String releaseVersion) {
+		Map<String, List<Issue>> ticketGroups, String releaseVersion) {
 
 		StringBuilder sb = new StringBuilder();
 
 		sb.append("# Poshi Runner Change Log\n");
 		sb.append("\n## " + releaseVersion + "\n");
 
-		for (Map.Entry<String, List<String>> entry : ticketGroups.entrySet()) {
+		for (Map.Entry<String, List<Issue>> entry : ticketGroups.entrySet()) {
 			String label = entry.getKey();
 
-			sb.append("\n### " + label + "\n");
+			sb.append("_" + label + "_\n");
 
-			for (String ticketMessage : entry.getValue()) {
-				sb.append("\n* " + ticketMessage);
+			for (Issue issue : entry.getValue()) {
+				sb.append(
+					"* " + _getTicketMarkdownURL(issue.getKey()) + " - " +
+						issue.getSummary() + "\n");
 			}
 
 			sb.append("\n");
@@ -436,6 +482,43 @@ public class ChangelogGenerator {
 		throw new RuntimeException("Could not find last released version");
 	}
 
+	private static String _getSlackPost(
+		Map<String, List<Issue>> ticketGroups, String releaseVersion) {
+
+		StringBuilder sb = new StringBuilder();
+
+		sb.append("<b>New Poshi Release(<a href=\"");
+
+		sb.append(_getTicketURL(RELEASE_TICKET));
+
+		sb.append("\">");
+
+		sb.append(releaseVersion);
+
+		sb.append("</a>)(<a href=\"");
+		sb.append("https://github.com/liferay/liferay-portal/blob/master/");
+		sb.append("modules/test/poshi/CHANGELOG.markdown");
+		sb.append("\">Changelog</a>)</b><br/><br/>");
+
+		for (Map.Entry<String, List<Issue>> entry : ticketGroups.entrySet()) {
+			String label = entry.getKey();
+
+			sb.append("<b><em>" + label + "</em></b><br/><ul>");
+
+			for (Issue issue : entry.getValue()) {
+				sb.append("<li><a href=\"");
+				sb.append(_getTicketURL(issue.getKey()));
+				sb.append("\">");
+				sb.append(issue.getKey());
+				sb.append("</a></li>");
+			}
+
+			sb.append("</ul>");
+		}
+
+		return sb.toString();
+	}
+
 	private static String _getTicketMarkdownURL(String ticketID) {
 		StringBuilder sb = new StringBuilder();
 
@@ -455,6 +538,46 @@ public class ChangelogGenerator {
 
 	private static String _getTicketURL(String ticketID) {
 		return "https://issues.liferay.com/browse/" + ticketID;
+	}
+
+	private static void _updateChangelogFile(
+			File changelogFile, Map<String, List<Issue>> ticketGroups,
+			String releaseVersion)
+		throws IOException {
+
+		String changeLogText = FileUtil.read(changelogFile);
+
+		changeLogText = changeLogText.replaceFirst(
+			"# Poshi Runner Change Log\n",
+			_getChangelogText(ticketGroups, releaseVersion));
+
+		Files.write(changelogFile.toPath(), changeLogText.getBytes());
+	}
+
+	private static void _updateJIRAIssueBodyText(
+		Map<String, List<Issue>> ticketGroups, String releaseTicketID,
+		IssueRestClient issueRestClient) {
+
+		StringBuilder sb = new StringBuilder();
+
+		for (Map.Entry<String, List<Issue>> entry : ticketGroups.entrySet()) {
+			String label = entry.getKey();
+
+			sb.append("_" + label + "_\n");
+
+			for (Issue issue : entry.getValue()) {
+				sb.append(
+					"* " + issue.getKey() + " - " + issue.getSummary() + "\n");
+			}
+
+			sb.append("\n");
+		}
+
+		IssueInputBuilder issueInput = new IssueInputBuilder();
+
+		issueInput.setDescription(sb.toString());
+
+		issueRestClient.updateIssue(releaseTicketID, issueInput.build());
 	}
 
 	private static String _upperCaseEachWord(String s) {
