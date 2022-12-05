@@ -396,7 +396,7 @@ public class ChangelogGenerator {
 		for (Map.Entry<String, List<Issue>> entry : ticketGroups.entrySet()) {
 			String label = entry.getKey();
 
-			sb.append("_" + label + "_\n");
+			sb.append("\n### " + label + "\n\n");
 
 			for (Issue issue : entry.getValue()) {
 				sb.append(
@@ -404,7 +404,6 @@ public class ChangelogGenerator {
 						issue.getSummary() + "\n");
 			}
 
-			sb.append("\n");
 		}
 
 		return sb.toString();
