@@ -53,7 +53,7 @@ public class PoshiScriptGenerator extends PoshiScriptEvaluator {
 	public static void setUp() throws Exception {
 		String[] poshiFileNames = {"**/*.function"};
 
-		PoshiContext.readFiles(poshiFileNames, poshiDirName);
+		PoshiContext.readFiles(true, poshiFileNames, poshiDirName);
 	}
 
 	@Test

@@ -66,7 +66,7 @@ public class PoshiElementTester {
 	public static void main(String[] args) throws Exception {
 		String[] poshiFileNames = {"**/*.function"};
 
-		PoshiContext.readFiles(poshiFileNames, portalPoshiDir);
+		PoshiContext.readFiles(true, poshiFileNames, portalPoshiDir);
 
 		boolean simulate = false;
 		simulate = true;

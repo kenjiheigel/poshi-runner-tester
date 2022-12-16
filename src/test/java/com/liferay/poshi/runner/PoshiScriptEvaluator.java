@@ -151,7 +151,7 @@ public class PoshiScriptEvaluator {
 	public static void setUp() throws Exception {
 		String[] poshiFileNames = {"**/*.function"};
 
-		PoshiContext.readFiles(poshiFileNames, poshiDirName);
+		PoshiContext.readFiles(true, poshiFileNames, poshiDirName);
 
 		//		PoshiContext.readFiles(poshiFileNames, "/Users/kenji/Projects/github/liferay-qa-websites-ee/shared");
 	}
