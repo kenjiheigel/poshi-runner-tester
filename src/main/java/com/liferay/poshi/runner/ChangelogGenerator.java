@@ -509,7 +509,10 @@ public class ChangelogGenerator {
 				sb.append(_getTicketURL(issue.getKey()));
 				sb.append("\">");
 				sb.append(issue.getKey());
-				sb.append("</a></li>");
+				sb.append("</a>");
+				sb.append(" - ");
+				sb.append(issue.getSummary());
+				sb.append("</li>");
 			}
 
 			sb.append("</ul>");
