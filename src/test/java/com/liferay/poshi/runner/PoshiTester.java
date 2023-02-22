@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or modify it under
@@ -14,16 +14,14 @@
 
 package com.liferay.poshi.runner;
 
-import com.liferay.poshi.runner.selenium.SeleniumUtil;
-import junit.framework.TestCase;
+import com.liferay.poshi.core.util.PropsUtil;
 
-import org.apache.commons.lang3.ArrayUtils;
-import org.junit.After;
+import java.io.FileInputStream;
+
+import java.util.Properties;
+
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.io.File;
 
 /**
  * @author Kenji Heigel
@@ -32,12 +30,22 @@ public class PoshiTester extends PoshiRunnerTestCase {
 
 	@Before
 	public void setUp() throws Exception {
+		Properties properties = new Properties();
+
+		properties.load(
+			new FileInputStream(
+				_TEST_BASE_DIR_NAME + "/poshi-runner-ext.properties"));
+
+		PropsUtil.clear();
+
+		PropsUtil.setProperties(properties);
+
 		setUpPoshiRunner(_TEST_BASE_DIR_NAME);
 	}
 
 	@Test
 	public void testPoshiTest() throws Exception {
-		PoshiRunner poshiRunner = new PoshiRunner("PoshiTester#Testing");
+		PoshiRunner poshiRunner = new PoshiRunner("PoshiScriptTest#MyTest");
 
 		poshiRunner.setUp();
 
@@ -45,6 +53,6 @@ public class PoshiTester extends PoshiRunnerTestCase {
 	}
 
 	private static final String _TEST_BASE_DIR_NAME =
-		"/Users/kenji/Projects/github/poshi-runner-tester/src/main/resources/poshiFiles";
+		"/opt/dev/projects/github/poshi-dev-tools/src/test/resources/poshiFiles";
 
 }
