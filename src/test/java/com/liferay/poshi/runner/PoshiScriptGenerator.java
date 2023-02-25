@@ -20,9 +20,11 @@ import com.liferay.poshi.core.elements.PoshiNodeFactory;
 import com.liferay.poshi.core.script.PoshiScriptParserException;
 import com.liferay.poshi.core.util.Dom4JUtil;
 import com.liferay.poshi.core.util.FileUtil;
+import com.liferay.poshi.core.util.PropsUtil;
 import com.liferay.poshi.runner.util.ExecUtil;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 
 import java.net.URL;
@@ -30,6 +32,8 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+import java.util.HashSet;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 
@@ -45,21 +49,52 @@ import org.junit.Test;
  */
 public class PoshiScriptGenerator extends PoshiScriptEvaluator {
 
-	public static final boolean commit = false;
-	public static final String poshiDirName = PoshiScriptEvaluator.poshiDirName;
-	public static final String ticket = "LRQA-45878";
+	public static final boolean COMMIT = false;
+
+	public static final String POSHI_DIR_NAME =
+		PoshiScriptEvaluator.poshiDirName;
+
+	public static final String TICKET = "LRQA-45878";
 
 	@BeforeClass
 	public static void setUp() throws Exception {
-		String[] poshiFileNames = {"**/*.function"};
+		Properties properties = new Properties();
 
-		PoshiContext.readFiles(true, poshiFileNames, poshiDirName);
+		File poshiPropertiesFile = new File(POSHI_DIR_NAME, "poshi.properties");
+
+		if (poshiPropertiesFile.exists()) {
+			properties.load(new FileInputStream(poshiPropertiesFile));
+		}
+
+		File poshiExtPropertiesFile = new File(
+			POSHI_DIR_NAME + "/poshi-ext.properties");
+
+		if (poshiExtPropertiesFile.exists()) {
+			properties.load(new FileInputStream(poshiExtPropertiesFile));
+		}
+
+		if (properties.get("test.base.dir.name") == null) {
+			properties.setProperty("test.base.dir.name", POSHI_DIR_NAME);
+		}
+
+		PropsUtil.clear();
+
+		PropsUtil.setProperties(properties);
+
+		PoshiContext.readFiles();
+	}
+
+	@Test
+	public void generatePoshiScript()
+		throws IOException, PoshiScriptParserException, TimeoutException {
+
+		generatePoshiScriptFiles(new HashSet<>(PoshiContext.getFilePaths()));
 	}
 
 	@Test
 	public void generatePoshiScriptFile() throws PoshiScriptParserException {
 		String filePath =
-			poshiDirName + "tests/portalsmoke/PortalSmoke.testcase";
+			POSHI_DIR_NAME + "tests/portalsmoke/PortalSmoke.testcase";
 
 		generatePoshiScriptFile(filePath);
 	}
@@ -86,9 +121,14 @@ public class PoshiScriptGenerator extends PoshiScriptEvaluator {
 	}
 
 	@Test
+	public void generatePoshiXML() throws PoshiScriptParserException {
+		generatePoshiXMLFiles(new HashSet<>(PoshiContext.getFilePaths()));
+	}
+
+	@Test
 	public void generatePoshiXMLFile() throws PoshiScriptParserException {
 		String filePath =
-			poshiDirName + "tests/portalsmoke/PortalSmoke.testcase";
+			POSHI_DIR_NAME + "tests/portalsmoke/PortalSmoke.testcase";
 
 		generatePoshiXMLFile(filePath);
 	}
@@ -106,6 +146,24 @@ public class PoshiScriptGenerator extends PoshiScriptEvaluator {
 	@Test
 	public void generatePoshiXMLTestcases() throws PoshiScriptParserException {
 		generatePoshiXMLFiles(getTestCaseFilePaths());
+	}
+
+	@Test
+	public void regenerateFile() throws Exception {
+		String filePath = "/path/to/poshi/file";
+
+		PoshiElement poshiElement =
+			(PoshiElement)PoshiNodeFactory.newPoshiNodeFromFile(
+				FileUtil.getURL(new File(filePath)));
+
+		System.out.println(poshiElement.toPoshiScript());
+
+		PoshiScriptParserException.throwExceptions(filePath);
+	}
+
+	@Test
+	public void regeneratePoshiScript() throws PoshiScriptParserException {
+		regeneratePoshiScript(new HashSet<>(PoshiContext.getFilePaths()));
 	}
 
 	protected void generatePoshiScriptFile(String filePath)
@@ -133,10 +191,7 @@ public class PoshiScriptGenerator extends PoshiScriptEvaluator {
 			if (areElementsEqual(rootElement, poshiElement) &&
 				areElementsEqual(rootElement, newPoshiElement)) {
 
-				Files.write(
-					Paths.get(filePath),
-					poshiElement.toPoshiScript(
-					).getBytes());
+				Files.write(Paths.get(filePath), poshiScript.getBytes());
 			}
 			else {
 				System.out.println("Could not generate poshi script:");
@@ -151,18 +206,28 @@ public class PoshiScriptGenerator extends PoshiScriptEvaluator {
 		}
 	}
 
+	protected void generatePoshiScriptFiles(Set<String> filePaths)
+		throws IOException, PoshiScriptParserException, TimeoutException {
+
+		generatePoshiScriptFiles(filePaths, null);
+	}
+
 	protected void generatePoshiScriptFiles(
 			Set<String> filePaths, String fileType)
 		throws IOException, PoshiScriptParserException, TimeoutException {
 
 		for (String filepath : filePaths) {
+			if (filepath.endsWith(".path")) {
+				continue;
+			}
+
 			generatePoshiScriptFile(filepath);
 		}
 
-		if (commit) {
+		if (COMMIT) {
 			ExecUtil.executeCommands(
-				false, new File(poshiDirName), 30000,
-				"git commit -am \"" + ticket + " Translate *." + fileType +
+				false, new File(POSHI_DIR_NAME), 30000,
+				"git commit -am \"" + TICKET + " Translate *." + fileType +
 					" files to Poshi Script\"");
 		}
 	}
@@ -170,17 +235,18 @@ public class PoshiScriptGenerator extends PoshiScriptEvaluator {
 	protected void generatePoshiXMLFile(String filePath)
 		throws PoshiScriptParserException {
 
+		if (filePath.endsWith(".path")) {
+			return;
+		}
+
 		try {
-			URL url = FileUtil.getURL(new File(filePath));
-
 			PoshiElement poshiElement =
-				(PoshiElement)PoshiNodeFactory.newPoshiNodeFromFile(url);
+				(PoshiElement)PoshiNodeFactory.newPoshiNodeFromFile(
+					FileUtil.getURL(new File(filePath)));
 
-			Files.write(
-				Paths.get(filePath),
-				Dom4JUtil.format(
-					poshiElement
-				).getBytes());
+			String poshiElementString = Dom4JUtil.format(poshiElement);
+
+			Files.write(Paths.get(filePath), poshiElementString.getBytes());
 		}
 		catch (IOException ioException) {
 			ioException.printStackTrace();
@@ -192,6 +258,35 @@ public class PoshiScriptGenerator extends PoshiScriptEvaluator {
 
 		for (String filepath : filePaths) {
 			generatePoshiXMLFile(filepath);
+		}
+	}
+
+	protected void regeneratePoshiScript(Set<String> filePaths)
+		throws PoshiScriptParserException {
+
+		for (String filepath : filePaths) {
+			regeneratePoshiScript(filepath);
+		}
+	}
+
+	protected void regeneratePoshiScript(String filePath)
+		throws PoshiScriptParserException {
+
+		if (filePath.endsWith(".path")) {
+			return;
+		}
+
+		try {
+			PoshiElement poshiElement =
+				(PoshiElement)PoshiNodeFactory.newPoshiNodeFromFile(
+					FileUtil.getURL(new File(filePath)));
+
+			String poshiScript = poshiElement.toPoshiScript();
+
+			Files.write(Paths.get(filePath), poshiScript.getBytes());
+		}
+		catch (IOException ioException) {
+			ioException.printStackTrace();
 		}
 	}
 
