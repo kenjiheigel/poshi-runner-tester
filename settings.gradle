@@ -12,12 +12,13 @@ if (file.exists()) {
 	portalDir = properties['portal.dir']
 }
 
-include ':test:data-guard-connector'
-project(':test:data-guard-connector').projectDir = new File(portalDir, '/modules/test/data-guard-connector')
-
+include ':jira-cloud-client'
+project(':jira-cloud-client').projectDir = new File('/opt/dev/projects/github/jira-cloud-client')
 include ':poshi-core'
 project(':poshi-core').projectDir = new File(portalDir, '/modules/test/poshi/poshi-core')
 include ':poshi-runner'
 project(':poshi-runner').projectDir = new File(portalDir, '/modules/test/poshi/poshi-runner')
 include ':sdk:gradle-plugins-poshi-runner'
 project(':sdk:gradle-plugins-poshi-runner').projectDir = new File(portalDir, '/modules/sdk/gradle-plugins-poshi-runner')
+include ':test:data-guard-connector'
+project(':test:data-guard-connector').projectDir = new File(portalDir, '/modules/test/data-guard-connector')
