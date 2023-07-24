@@ -2,6 +2,7 @@ rootProject.name = 'poshi-dev-tools'
 
 Properties properties = new Properties()
 
+String jiraCloudClientDir = '/opt/dev/projects/github/jira-cloud-client'
 String portalDir = '/opt/dev/projects/github/liferay-portal'
 
 File file = new File(rootDir, 'custom.properties')
@@ -9,11 +10,12 @@ File file = new File(rootDir, 'custom.properties')
 if (file.exists()) {
 	properties.load(new StringReader(file.text))
 
+    jiraCloudClientDir = properties['jira.cloud.client.dir']
 	portalDir = properties['portal.dir']
 }
 
 include ':jira-cloud-client'
-project(':jira-cloud-client').projectDir = new File('/opt/dev/projects/github/jira-cloud-client')
+project(':jira-cloud-client').projectDir = new File(jiraCloudClientDir)
 include ':poshi-core'
 project(':poshi-core').projectDir = new File(portalDir, '/modules/test/poshi/poshi-core')
 include ':poshi-runner'
