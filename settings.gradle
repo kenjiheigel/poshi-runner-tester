@@ -10,7 +10,7 @@ File file = new File(rootDir, 'custom.properties')
 if (file.exists()) {
 	properties.load(new StringReader(file.text))
 
-    jiraCloudClientDir = properties['jira.cloud.client.dir']
+	jiraCloudClientDir = properties['jira.cloud.client.dir']
 	portalDir = properties['portal.dir']
 }
 
