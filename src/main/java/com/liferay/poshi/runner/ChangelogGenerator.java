@@ -72,10 +72,17 @@ public class ChangelogGenerator {
 	public static final File PORTAL_DIR = new File(
 		"/opt/dev/projects/github/liferay-portal");
 
-	public static final String RELEASE_TICKET = "POSHI-599";
+	public static final String RELEASE_TICKET = "";
+
+	public static final List<String> ignorableTickets = Arrays.asList();
 
 	public static void main(String[] args)
 		throws ApiException, GitAPIException, IOException {
+
+		if (RELEASE_TICKET.isEmpty()) {
+			throw new RuntimeException(
+				"Please set RELEASE_TICKET to a valid JIRA ticket ID");
+		}
 
 		Git git = Git.open(PORTAL_DIR);
 
@@ -145,6 +152,10 @@ public class ChangelogGenerator {
 
 				tickets.add(ticketID);
 			}
+		}
+
+		for (String ignorableTicket : ignorableTickets) {
+			tickets.remove(ignorableTicket);
 		}
 
 		String ticketListString = tickets.toString();
