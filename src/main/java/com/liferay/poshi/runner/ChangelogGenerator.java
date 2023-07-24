@@ -104,6 +104,7 @@ public class ChangelogGenerator {
 		ObjectId releaseSHA = null;
 
 		int i = 1;
+		String lastReleasedVersion = _getLastReleasedVersion();
 		String releaseVersion = _getReleaseVersion();
 
 		for (RevCommit commit : bndCommits) {
@@ -121,7 +122,7 @@ public class ChangelogGenerator {
 				}
 			}
 
-			if (content.contains(_getLastReleasedVersion())) {
+			if (content.contains(lastReleasedVersion)) {
 				lastReleaseSHA = commit.getId();
 
 				break;
@@ -171,10 +172,10 @@ public class ChangelogGenerator {
 
 		ApiClient apiClient = new ApiClient();
 
-		apiClient.setUsername(Authentication.JIRA_USERNAME);
-		apiClient.setPassword(Authentication.JIRA_PASSWORD);
-		apiClient.setDebugging(false);
 		apiClient.setBasePath("https://liferay.atlassian.net/");
+		apiClient.setDebugging(false);
+		apiClient.setPassword(Authentication.JIRA_PASSWORD);
+		apiClient.setUsername(Authentication.JIRA_USERNAME);
 
 		IssuesApi issuesApi = new IssuesApi(apiClient);
 
