@@ -39,6 +39,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 
 import java.net.URLEncoder;
 
@@ -84,91 +85,9 @@ public class ChangelogGenerator {
 				"Please set RELEASE_TICKET to a valid JIRA ticket ID");
 		}
 
-		Git git = Git.open(PORTAL_DIR);
+		Set<String> tickets = _getTickets();
 
-		Repository repository = git.getRepository();
-
-		ObjectId currentSHA = repository.resolve(repository.getBranch());
-
-		LogCommand bndLogCommand = git.log();
-
-		String bndPath = _POSHI_DIR_PATH + "/poshi-runner/bnd.bnd";
-
-		bndLogCommand.add(currentSHA);
-		bndLogCommand.addPath(bndPath);
-		bndLogCommand.setMaxCount(50);
-
-		Iterable<RevCommit> bndCommits = bndLogCommand.call();
-
-		ObjectId lastReleaseSHA = null;
-		ObjectId releaseSHA = null;
-
-		int i = 1;
-		String lastReleasedVersion = _getLastReleasedVersion();
-		String releaseVersion = _getReleaseVersion();
-
-		for (RevCommit commit : bndCommits) {
-			String content = _getFileContentAtCommit(git, commit, bndPath);
-
-			if (i == 2) {
-				Matcher matcher = _bundleVersionPattern.matcher(content);
-
-				if (matcher.find()) {
-					String nextReleaseVersion = _getNextVersion(releaseVersion);
-
-					if (nextReleaseVersion.equals(matcher.group(1))) {
-						releaseSHA = commit.getId();
-					}
-				}
-			}
-
-			if (content.contains(lastReleasedVersion)) {
-				lastReleaseSHA = commit.getId();
-
-				break;
-			}
-
-			i++;
-		}
-
-		LogCommand poshiDirLogCommand = git.log();
-
-		poshiDirLogCommand.addPath(_POSHI_DIR_PATH);
-		poshiDirLogCommand.addPath("modules/sdk/gradle-plugins-poshi-runner");
-		poshiDirLogCommand.addRange(lastReleaseSHA, releaseSHA);
-
-		Iterable<RevCommit> commits = poshiDirLogCommand.call();
-
-		Set<String> tickets = new TreeSet<>();
-
-		for (RevCommit commit : commits) {
-			String commitMessage = commit.getFullMessage();
-
-			commitMessage = commitMessage.trim();
-
-			Matcher matcher = _ticketPattern.matcher(commitMessage);
-
-			if (matcher.find()) {
-				String ticketID = matcher.group();
-
-				tickets.add(ticketID);
-			}
-		}
-
-		for (String ignorableTicket : ignorableTickets) {
-			tickets.remove(ignorableTicket);
-		}
-
-		String ticketListString = tickets.toString();
-
-		ticketListString = StringUtil.replace(ticketListString, "[", "(");
-		ticketListString = StringUtil.replace(ticketListString, "]", ")");
-
-		ticketListString = URLEncoder.encode(ticketListString, "UTF-8");
-
-		System.out.println(
-			"https://liferay.atlassian.net/issues/?jql=key%20in" +
-				ticketListString);
+		_printIssuesQueryURL(tickets);
 
 		ApiClient apiClient = new ApiClient();
 
@@ -319,12 +238,12 @@ public class ChangelogGenerator {
 			throw new RuntimeException(sb.toString());
 		}
 
-		_updateChangelogFile(ticketGroups, releaseVersion);
+		_updateChangelogFile(ticketGroups, _getReleaseVersion());
 
 		_updateJIRAIssueBodyText(ticketGroups, RELEASE_TICKET, apiClient);
 
 		_copyHTMLTextToClipboard(
-			_getSlackPost(ticketGroups, releaseVersion), "plaintext");
+			_getSlackPost(ticketGroups, _getReleaseVersion()), "plaintext");
 	}
 
 	public static class HtmlTransferable implements Transferable {
@@ -500,6 +419,10 @@ public class ChangelogGenerator {
 	}
 
 	private static String _getReleaseVersion() throws IOException {
+		if (_releaseVersion != null) {
+			return _releaseVersion;
+		}
+
 		File file = new File(
 			PORTAL_DIR,
 			"modules/sdk/gradle-plugins-poshi-runner/src/main/java/com" +
@@ -580,6 +503,87 @@ public class ChangelogGenerator {
 		return sb.toString();
 	}
 
+	private static Set<String> _getTickets()
+		throws GitAPIException, IOException {
+
+		Set<String> tickets = new TreeSet<>();
+
+		Git git = Git.open(PORTAL_DIR);
+
+		Repository repository = git.getRepository();
+
+		ObjectId currentSHA = repository.resolve(repository.getBranch());
+
+		LogCommand bndLogCommand = git.log();
+
+		String bndPath = _POSHI_DIR_PATH + "/poshi-runner/bnd.bnd";
+
+		bndLogCommand.add(currentSHA);
+		bndLogCommand.addPath(bndPath);
+		bndLogCommand.setMaxCount(50);
+
+		Iterable<RevCommit> bndCommits = bndLogCommand.call();
+
+		ObjectId lastReleaseSHA = null;
+		ObjectId releaseSHA = null;
+
+		int i = 1;
+		String lastReleasedVersion = _getLastReleasedVersion();
+		String releaseVersion = _getReleaseVersion();
+
+		for (RevCommit commit : bndCommits) {
+			String content = _getFileContentAtCommit(git, commit, bndPath);
+
+			if (i == 2) {
+				Matcher matcher = _bundleVersionPattern.matcher(content);
+
+				if (matcher.find()) {
+					String nextReleaseVersion = _getNextVersion(releaseVersion);
+
+					if (nextReleaseVersion.equals(matcher.group(1))) {
+						releaseSHA = commit.getId();
+					}
+				}
+			}
+
+			if (content.contains(lastReleasedVersion)) {
+				lastReleaseSHA = commit.getId();
+
+				break;
+			}
+
+			i++;
+		}
+
+		LogCommand poshiDirLogCommand = git.log();
+
+		poshiDirLogCommand.addPath(_POSHI_DIR_PATH);
+		poshiDirLogCommand.addPath("modules/sdk/gradle-plugins-poshi-runner");
+		poshiDirLogCommand.addRange(lastReleaseSHA, releaseSHA);
+
+		Iterable<RevCommit> commits = poshiDirLogCommand.call();
+
+		for (RevCommit commit : commits) {
+			String commitMessage = commit.getFullMessage();
+
+			commitMessage = commitMessage.trim();
+
+			Matcher matcher = _ticketPattern.matcher(commitMessage);
+
+			if (matcher.find()) {
+				String ticketID = matcher.group();
+
+				tickets.add(ticketID);
+			}
+		}
+
+		for (String ignorableTicket : ignorableTickets) {
+			tickets.remove(ignorableTicket);
+		}
+
+		return tickets;
+	}
+
 	private static String _getTicketURL(String ticketID) {
 		return "https://liferay.atlassian.net/browse/" + ticketID;
 	}
@@ -613,6 +617,21 @@ public class ChangelogGenerator {
 		linkIssueRequestJsonBean.setType(issueLinkType.name(linkTypeName));
 
 		issueLinksApi.linkIssues(linkIssueRequestJsonBean);
+	}
+
+	private static void _printIssuesQueryURL(Set<String> tickets)
+		throws UnsupportedEncodingException {
+
+		String ticketListString = tickets.toString();
+
+		ticketListString = StringUtil.replace(ticketListString, "[", "(");
+		ticketListString = StringUtil.replace(ticketListString, "]", ")");
+
+		ticketListString = URLEncoder.encode(ticketListString, "UTF-8");
+
+		System.out.println(
+			"https://liferay.atlassian.net/issues/?jql=key%20in" +
+				ticketListString);
 	}
 
 	private static void _updateChangelogFile(
@@ -685,6 +704,7 @@ public class ChangelogGenerator {
 	private static final Pattern _bundleVersionPattern = Pattern.compile(
 		"Bundle-Version:[\\s]*(.*)");
 	private static String _lastReleasedVersion = null;
+	private static String _releaseVersion;
 	private static final Pattern _ticketPattern = Pattern.compile(
 		"(LPS|LRQA|LRCI|POSHI)-[0-9]+");
 
