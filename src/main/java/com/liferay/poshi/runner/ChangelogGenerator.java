@@ -17,6 +17,7 @@ package com.liferay.poshi.runner;
 import com.google.gson.internal.LinkedTreeMap;
 
 import com.liferay.poshi.core.util.FileUtil;
+import com.liferay.poshi.core.util.GetterUtil;
 import com.liferay.poshi.core.util.RegexUtil;
 import com.liferay.poshi.core.util.StringUtil;
 
@@ -24,10 +25,14 @@ import io.swagger.client.ApiClient;
 import io.swagger.client.ApiException;
 import io.swagger.client.api.IssueLinksApi;
 import io.swagger.client.api.IssuesApi;
+import io.swagger.client.api.ProjectVersionsApi;
+import io.swagger.client.api.ProjectsApi;
 import io.swagger.client.model.IssueBean;
 import io.swagger.client.model.IssueLinkType;
 import io.swagger.client.model.LinkIssueRequestJsonBean;
 import io.swagger.client.model.LinkedIssue;
+import io.swagger.client.model.Project;
+import io.swagger.client.model.Version;
 
 import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
@@ -48,6 +53,8 @@ import java.nio.file.Files;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -118,10 +125,10 @@ public class ChangelogGenerator {
 		List<String> missingComponentTickets = new ArrayList<>();
 		Map<String, List<IssueBean>> ticketGroups = new TreeMap<>();
 
+		Set<String> releaseTickets = new HashSet<>();
+
 		for (String ticketID : tickets) {
 			IssueBean issueBean = _getIssueBean(issuesApi, ticketID);
-
-			_linkIssues(apiClient, RELEASE_TICKET, ticketID, "Relationship");
 
 			Map<String, Object> issueBeanFields = issueBean.getFields();
 
@@ -148,12 +155,16 @@ public class ChangelogGenerator {
 								label,
 								new ArrayList<>(Arrays.asList(issueBean)));
 
+							releaseTickets.add(ticketID);
+
 							break;
 						}
 
 						List<IssueBean> ticketList = ticketGroups.get(label);
 
 						ticketList.add(issueBean);
+
+						releaseTickets.add(ticketID);
 
 						break;
 					}
@@ -202,12 +213,18 @@ public class ChangelogGenerator {
 							componentName,
 							new ArrayList<>(Arrays.asList(issueBean)));
 
+						releaseTickets.add(ticketID);
+
 						break;
 					}
 
 					List<IssueBean> issues = ticketGroups.get(componentName);
 
 					issues.add(issueBean);
+
+					releaseTickets.add(ticketID);
+
+					break;
 				}
 			}
 			else {
@@ -221,6 +238,8 @@ public class ChangelogGenerator {
 				List<IssueBean> ticketList = ticketGroups.get("Other");
 
 				ticketList.add(issueBean);
+
+				releaseTickets.add(ticketID);
 			}
 		}
 
@@ -241,6 +260,8 @@ public class ChangelogGenerator {
 		_updateChangelogFile(ticketGroups, _getReleaseVersion());
 
 		_updateJIRAIssueBodyText(ticketGroups, RELEASE_TICKET, apiClient);
+
+		_updateJIRAReleaseVersion(releaseTickets, apiClient);
 
 		_copyHTMLTextToClipboard(
 			_getSlackPost(ticketGroups, _getReleaseVersion()), "plaintext");
@@ -680,6 +701,70 @@ public class ChangelogGenerator {
 
 		// TO DO
 
+	}
+
+	private static void _updateJIRAReleaseVersion(
+			Set<String> tickets, ApiClient apiClient)
+		throws ApiException, IOException {
+
+		Map<String, Object> issueMap = new HashMap<>();
+
+		Map<String, Object> fieldsMap = new HashMap<>();
+
+		Map<String, Object> fixVersionsMap = new HashMap<>();
+
+		String releaseVersion = _getReleaseVersion();
+
+		Version version = null;
+
+		ProjectVersionsApi projectVersionsApi = new ProjectVersionsApi(
+			apiClient);
+
+		for (Version projectVersion :
+				projectVersionsApi.getProjectVersions("POSHI", null)) {
+
+			if (releaseVersion.equals(projectVersion.getName())) {
+				version = projectVersion;
+
+				break;
+			}
+		}
+
+		if (version == null) {
+			version = new Version();
+
+			ProjectsApi projectsApi = new ProjectsApi(apiClient);
+
+			Project project = projectsApi.getProject("POSHI", null, null);
+
+			version.setProjectId(GetterUtil.getLong(project.getId()));
+
+			version.setName(releaseVersion);
+
+			version = projectVersionsApi.createVersion(version);
+		}
+
+		fixVersionsMap.put("name", releaseVersion);
+
+		fieldsMap.put("fixVersions", new Object[] {fixVersionsMap});
+
+		issueMap.put("fields", fieldsMap);
+
+		IssuesApi issuesApi = new IssuesApi(apiClient);
+
+		for (String ticketKey : tickets) {
+			_linkIssues(apiClient, RELEASE_TICKET, ticketKey, "Relationship");
+
+			if (ticketKey.startsWith("POSHI")) {
+				issuesApi.editIssue(issueMap, ticketKey, false, false, false);
+			}
+		}
+
+		Version updateVersion = new Version();
+
+		updateVersion.setReleased(true);
+
+		projectVersionsApi.updateVersion(updateVersion, version.getId());
 	}
 
 	private static String _upperCaseEachWord(String s) {
