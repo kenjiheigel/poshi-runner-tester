@@ -77,6 +77,8 @@ import org.eclipse.jgit.treewalk.TreeWalk;
  */
 public class ChangelogGenerator {
 
+	public static final boolean DRY_RUN = true;
+
 	public static final File PORTAL_DIR = new File(
 		"/opt/dev/projects/github/liferay-portal");
 
@@ -95,6 +97,10 @@ public class ChangelogGenerator {
 		Set<String> tickets = _getTickets();
 
 		_printIssuesQueryURL(tickets);
+
+		if (DRY_RUN) {
+			return;
+		}
 
 		ApiClient apiClient = new ApiClient();
 
