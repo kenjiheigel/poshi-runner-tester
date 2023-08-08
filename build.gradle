@@ -106,5 +106,5 @@ for (String gradleVersion in ["6.9.2", "7.3.3"]) {
 }
 
 wrapper {
-	distributionUrl = "https://github.com/liferay/liferay-binaries-cache-2020/raw/master/gradle-5.6.4.LIFERAY-PATCHED-2-bin.zip"
+	distributionUrl = "https://releases-cdn.liferay.com/tools/gradle/gradle-7.3.3.LIFERAY-PATCHED-1-bin.zip"
 }
