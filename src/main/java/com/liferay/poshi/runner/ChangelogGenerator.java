@@ -561,15 +561,13 @@ public class ChangelogGenerator {
 		for (RevCommit commit : bndCommits) {
 			String content = _getFileContentAtCommit(git, commit, bndPath);
 
-			if (i == 2) {
-				Matcher matcher = _bundleVersionPattern.matcher(content);
+			Matcher matcher = _bundleVersionPattern.matcher(content);
 
-				if (matcher.find()) {
-					String nextReleaseVersion = _getNextVersion(releaseVersion);
+			if (matcher.find()) {
+				String nextReleaseVersion = _getNextVersion(releaseVersion);
 
-					if (nextReleaseVersion.equals(matcher.group(1))) {
-						releaseSHA = commit.getId();
-					}
+				if (nextReleaseVersion.equals(matcher.group(1))) {
+					releaseSHA = commit.getId();
 				}
 			}
 
