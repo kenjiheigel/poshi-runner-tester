@@ -64,6 +64,9 @@ afterEvaluate {
 }
 
 test {
+    maxHeapSize = "1024m"
+    minHeapSize = "1024m"
+
 	systemProperty "webdriver.chrome.driver", project.buildDir.toString() + "/webdriver/chromedriver"
 }
 
