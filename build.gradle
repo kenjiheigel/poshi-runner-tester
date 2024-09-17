@@ -4,9 +4,7 @@ import com.liferay.gradle.util.copy.StripPathSegmentsAction
 buildscript {
 	dependencies {
 		classpath group: "com.liferay", name: "com.liferay.gradle.plugins.defaults", version: "latest.release"
-		classpath group: "com.liferay", name: "com.liferay.gradle.plugins.maven.plugin.builder", version: "2.0.1"
-		classpath group: "de.undercouch", name: "gradle-download-task", version: "5.4.0"
-		classpath group: "org.ysb33r.gradle", name: "gradletest", version: "3.0.0-alpha.2"
+
 		classpath group: "xalan", name: "xalan", version: "2.7.2"
 	}
 
@@ -41,7 +39,7 @@ dependencies {
 	implementation project(":jira-cloud-client")
 	implementation project(":poshi-core")
 	implementation project(":poshi-runner")
-	implementation project(":sdk:gradle-plugins-poshi-runner")
+	implementation project(":gradle-plugins-poshi-runner")
 	implementation project(":test:data-guard-connector")
 }
 
@@ -109,5 +107,5 @@ for (String gradleVersion in ["6.9.2", "7.3.3", "8.5"]) {
 }
 
 wrapper {
-	distributionUrl = "https://releases-cdn.liferay.com/tools/gradle/gradle-7.3.3.LIFERAY-PATCHED-1-bin.zip"
+    distributionUrl = "https://releases-cdn.liferay.com/tools/gradle/gradle-8.5.LIFERAY-PATCHED-1-bin.zip"
 }
